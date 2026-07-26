@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: devsphere
+  datasource:
+    url: jdbc:postgresql://localhost:5432/DevSphere
+    username: postgres
+    password: Piku@psql
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+    show-sql: true
+
+    properties:
+      hibernate:
+        format_sql: true
