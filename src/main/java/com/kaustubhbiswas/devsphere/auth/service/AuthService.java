@@ -9,6 +9,7 @@ import com.kaustubhbiswas.devsphere.auth.dto.request.LoginUserRequest;
 import com.kaustubhbiswas.devsphere.auth.dto.request.RegisterUserRequest;
 import com.kaustubhbiswas.devsphere.auth.dto.response.LoginUserResponse;
 import com.kaustubhbiswas.devsphere.auth.dto.response.RegisterUserResponse;
+import com.kaustubhbiswas.devsphere.auth.security.JwtService;
 import com.kaustubhbiswas.devsphere.common.exception.BusinessValidationException;
 import com.kaustubhbiswas.devsphere.user.Role;
 import com.kaustubhbiswas.devsphere.user.User;
@@ -19,10 +20,12 @@ public class AuthService {
     
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder){
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService){
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
     }
 
     public RegisterUserResponse registerUser(RegisterUserRequest request){
@@ -70,12 +73,15 @@ public class AuthService {
             throw new BusinessValidationException("Invalid email or password.");
         }
 
+        String token = jwtService.generateToken(user);
+
         LoginUserResponse response = new LoginUserResponse();
 
         response.setId(user.getId());
         response.setUsername(user.getUsername());
         response.setEmail(user.getEmail());
         response.setRole(user.getRole());
+        response.setToken(token);
 
         return response;
 

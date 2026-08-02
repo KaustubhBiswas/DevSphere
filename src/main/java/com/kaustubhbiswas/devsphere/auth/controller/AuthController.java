@@ -13,6 +13,9 @@ import com.kaustubhbiswas.devsphere.auth.service.AuthService;
 import com.kaustubhbiswas.devsphere.common.response.ApiResponse;
 
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 @RestController
 @RequestMapping("/api/auth")
@@ -39,5 +42,11 @@ public class AuthController {
 
         return ApiResponse.success("Login successful.", response);
     }
+
+    @GetMapping("/hello")
+    public ApiResponse<String> hello() {
+        return ApiResponse.success("Authentication Successfull." , "Hello from protected endpoint.");
+    }
+    
 
 }

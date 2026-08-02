@@ -87,7 +87,8 @@ public class User {
         return createdAt;
     }
 
-    public LocalDateTime getUpdatedAt()
-{
-    return updatedAt;
-}}
+    public LocalDateTime getUpdatedAt(){
+        return updatedAt;
+    }
+
+}
