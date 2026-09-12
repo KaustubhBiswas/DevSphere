@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.kaustubhbiswas.devsphere.common.response.ApiResponse;
 import com.kaustubhbiswas.devsphere.organization.dto.request.AddOrganizationMemberRequest;
 import com.kaustubhbiswas.devsphere.organization.dto.request.CreateOrganizationRequest;
+import com.kaustubhbiswas.devsphere.organization.dto.request.UpdateOrganizationMemberRoleRequest;
 import com.kaustubhbiswas.devsphere.organization.dto.response.OrganizationMemberResponse;
 import com.kaustubhbiswas.devsphere.organization.response.OrganizationResponse;
 import com.kaustubhbiswas.devsphere.organization.service.OrganizationService;
@@ -17,9 +18,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
+
 
 
 
@@ -71,7 +74,22 @@ public class OrganizationController {
 
         return ApiResponse.success("Members fetched successfully.", members);
     }
+
     
+    @DeleteMapping("/{organizationId}/members/{userId}")
+    public ApiResponse<Void> removeMember(@PathVariable Long organizationId, @PathVariable Long userId){
+
+        organizationService.removeMember(organizationId, userId);
+
+        return ApiResponse.success("Member removed successfully.", null);
+    }
     
-    
+    @PatchMapping("/{organizationId}/members/{userId}/role")
+    public ApiResponse<Void> updateMemberRole(@PathVariable Long organizationId, @PathVariable Long userId, @Valid @RequestBody UpdateOrganizationMemberRoleRequest request){
+
+        organizationService.updateMemberRole(organizationId, userId, request);
+
+        return ApiResponse.success("Member role updated successfully.", null);
+    }
+
 }

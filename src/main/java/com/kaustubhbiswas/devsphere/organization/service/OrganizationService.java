@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.kaustubhbiswas.devsphere.common.exception.BusinessValidationException;
 import com.kaustubhbiswas.devsphere.common.exception.ResourceNotFoundException;
@@ -16,6 +17,7 @@ import com.kaustubhbiswas.devsphere.organization.repository.OrganizationMemberRe
 import com.kaustubhbiswas.devsphere.organization.repository.OrganizationRepository;
 import com.kaustubhbiswas.devsphere.organization.dto.request.AddOrganizationMemberRequest;
 import com.kaustubhbiswas.devsphere.organization.dto.request.CreateOrganizationRequest;
+import com.kaustubhbiswas.devsphere.organization.dto.request.UpdateOrganizationMemberRoleRequest;
 import com.kaustubhbiswas.devsphere.organization.dto.response.OrganizationMemberResponse;
 import com.kaustubhbiswas.devsphere.organization.response.OrganizationResponse;
 import com.kaustubhbiswas.devsphere.user.User;
@@ -34,6 +36,7 @@ public class OrganizationService {
         this.organizationMemberRepository = organizationMemberRepository;
     }
 
+    @Transactional
     public OrganizationResponse createOrganization(CreateOrganizationRequest request){
         
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -76,8 +79,16 @@ public class OrganizationService {
     }
 
     public OrganizationResponse getOrganizationById(Long id){
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+
+        User requester = userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found."));
+
         Organization organization = organizationRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Organization not found with id: " + id));
         
+        organizationMemberRepository.findByOrganizationIdAndUserId(id, requester.getId()).orElseThrow(() -> new BusinessValidationException("You are not a member of this organization."));
+
         return toResponse(organization);
     }
 
@@ -157,6 +168,65 @@ public class OrganizationService {
         response.setJoinedAt(member.getJoinedAt());
 
         return response;
+    }
+
+    public void removeMember(Long organizationId, Long userId){
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        String email = authentication.getName();
+
+        User requester = userRepository.findByEmail(email).orElseThrow(() -> new BusinessValidationException("User not found."));
+
+        Organization organization = organizationRepository.findById(organizationId).orElseThrow(() -> new ResourceNotFoundException("Organization not found with id: "+organizationId));
+
+        OrganizationMember requesterMembership = organizationMemberRepository.findByOrganizationIdAndUserId(organization.getId(), requester.getId()).orElseThrow(() -> new BusinessValidationException("You are not a member of this organization."));
+
+        OrganizationMember targetMembership = organizationMemberRepository.findByOrganizationIdAndUserId(organization.getId(), userId).orElseThrow(() -> new ResourceNotFoundException("User is not a member of this organization."));
+
+        if (targetMembership.getRole()==OrganizationRole.OWNER){
+            throw new BusinessValidationException("Cannot remove the owner of the organization.");
+        }
+
+        if (requesterMembership.getRole()==OrganizationRole.MEMBER){
+            throw new BusinessValidationException("You do not have permission to remove members.");
+        }
+
+        if (requesterMembership.getRole()==OrganizationRole.ADMIN && targetMembership.getRole()==OrganizationRole.ADMIN){
+            throw new BusinessValidationException("Admin cannot remove another admin.");
+        }
+
+        organizationMemberRepository.delete(targetMembership);
+
+    }
+
+    public void updateMemberRole(Long organizationId, Long userId, UpdateOrganizationMemberRoleRequest request){
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User requester = userRepository.findByEmail(email).orElseThrow(() -> new BusinessValidationException("User not found."));
+
+        OrganizationMember requesterMembership = organizationMemberRepository.findByOrganizationIdAndUserId(organizationId, requester.getId()).orElseThrow(() -> new BusinessValidationException("You are not a member of this organization."));
+        OrganizationMember targetMembership = organizationMemberRepository.findByOrganizationIdAndUserId(organizationId, userId).orElseThrow(() -> new ResourceNotFoundException("User is not a member of this organization."));
+
+        OrganizationRole newRole = request.getRole();
+
+        if (requesterMembership.getRole() != OrganizationRole.OWNER){
+            throw new BusinessValidationException("Only organization owner can change member roles.");
+        }
+
+        if (targetMembership.getRole() == OrganizationRole.OWNER){
+            throw new BusinessValidationException("Organization owner cannot be changed.");
+        }
+
+        if (newRole == OrganizationRole.OWNER){
+            throw new BusinessValidationException("Ownership cannot be transferred through this endpoint.");
+        }
+
+        targetMembership.setRole(newRole);
+
+        organizationMemberRepository.save(targetMembership);
+
     }
 
 }
