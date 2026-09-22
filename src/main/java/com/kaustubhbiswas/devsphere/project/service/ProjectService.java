@@ -10,10 +10,13 @@ import org.springframework.stereotype.Service;
 import com.kaustubhbiswas.devsphere.common.exception.BusinessValidationException;
 import com.kaustubhbiswas.devsphere.common.exception.ResourceNotFoundException;
 import com.kaustubhbiswas.devsphere.organization.Organization;
+import com.kaustubhbiswas.devsphere.organization.OrganizationMember;
+import com.kaustubhbiswas.devsphere.organization.OrganizationRole;
 import com.kaustubhbiswas.devsphere.organization.repository.OrganizationMemberRepository;
 import com.kaustubhbiswas.devsphere.organization.repository.OrganizationRepository;
 import com.kaustubhbiswas.devsphere.project.Project;
 import com.kaustubhbiswas.devsphere.project.dto.request.CreateProjectRequest;
+import com.kaustubhbiswas.devsphere.project.dto.request.UpdateProjectRequest;
 import com.kaustubhbiswas.devsphere.project.dto.response.ProjectResponse;
 import com.kaustubhbiswas.devsphere.project.repository.ProjectRepository;
 import com.kaustubhbiswas.devsphere.user.User;
@@ -95,6 +98,37 @@ public class ProjectService {
 
         return projectRepository.findByOrganizationId(organizationId).stream().map(this::toResponse).toList();
 
+    }
+
+    public ProjectResponse updateProject(Long projectId, Long organizationId, UpdateProjectRequest request){
+        
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User requester = userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found."));
+
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResourceNotFoundException("Project doesn't exist."));
+
+        OrganizationMember membership = organizationMemberRepository.findByOrganizationIdAndUserId(organizationId, requester.getId()).orElseThrow(() -> new BusinessValidationException("You are not a member of this organization."));
+
+        if (!project.getOrganization().getId().equals(organizationId)){
+            throw new BusinessValidationException("Project doesn't belong to this organization.");
+        }
+
+        if (membership.getRole()!=OrganizationRole.ADMIN && membership.getRole()!=OrganizationRole.OWNER){
+            throw new BusinessValidationException("You don't have permission to update this project.");
+        }
+
+        if (request.getName()!=null){
+            project.setName(request.getName());
+        }
+
+        if (request.getDescription()!=null){
+            project.setDescription(request.getDescription());
+        }
+        
+        Project updatedProject = projectRepository.save(project);
+
+        return toResponse(updatedProject);
     }
 
 }

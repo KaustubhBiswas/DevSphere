@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.kaustubhbiswas.devsphere.common.response.ApiResponse;
 import com.kaustubhbiswas.devsphere.project.dto.request.CreateProjectRequest;
+import com.kaustubhbiswas.devsphere.project.dto.request.UpdateProjectRequest;
 import com.kaustubhbiswas.devsphere.project.dto.response.ProjectResponse;
 import com.kaustubhbiswas.devsphere.project.service.ProjectService;
 
@@ -12,6 +13,7 @@ import jakarta.validation.Valid;
 
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
@@ -53,6 +55,13 @@ public class ProjectController {
 
         return ApiResponse.success("Projects fetched successfully.", response);
     }
-    
+
+    @PutMapping("/{projectId}")
+    public ApiResponse<ProjectResponse> updateProject(@PathVariable Long projectId, @PathVariable Long organizationId, @Valid @RequestBody UpdateProjectRequest request) {
+        
+        ProjectResponse response = projectService.updateProject(projectId, organizationId, request);
+        
+        return ApiResponse.success("Project updated successfully.", response);
+    }
     
 }
