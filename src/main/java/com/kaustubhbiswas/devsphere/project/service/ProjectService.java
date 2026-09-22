@@ -131,4 +131,25 @@ public class ProjectService {
         return toResponse(updatedProject);
     }
 
+    public void deleteProject(Long projectId, Long organizationId){
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User requester = userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("user not found."));
+
+        Project project = projectRepository.findById(projectId).orElseThrow(() -> new ResourceNotFoundException("Project not found with the id: " + projectId));
+
+        OrganizationMember membership = organizationMemberRepository.findByOrganizationIdAndUserId(organizationId, requester.getId()).orElseThrow(() -> new BusinessValidationException("You are not a member of this organization."));
+
+        if (!project.getOrganization().getId().equals(organizationId)){
+            throw new BusinessValidationException("Project doesn't belong to this organization.");
+        }
+
+        if (membership.getRole()!=OrganizationRole.ADMIN && membership.getRole()!=OrganizationRole.OWNER){
+            throw new BusinessValidationException("You don't have permission to delete this project.");
+        }
+
+        projectRepository.delete(project);
+    }
+
 }

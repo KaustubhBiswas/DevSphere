@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 
 
@@ -62,6 +63,14 @@ public class ProjectController {
         ProjectResponse response = projectService.updateProject(projectId, organizationId, request);
         
         return ApiResponse.success("Project updated successfully.", response);
+    }
+
+    @DeleteMapping("/{projectId}")
+    public ApiResponse<Void> deleteProject(@PathVariable Long projectId, @PathVariable Long organizationId){
+
+        projectService.deleteProject(projectId, organizationId);
+
+        return ApiResponse.success("Project deleted successfully.", null);
     }
     
 }
